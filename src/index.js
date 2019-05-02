@@ -82,16 +82,19 @@ async function lrcExists (filepath) {
 }
 
 let musicfiles = []
-async function downDirLrcfiles (dirpath) {
+async function downDirLrcfiles (dirpath, overwriteLrc = false) {
   const files = await fs.readdir(dirpath)
   for (file of files) {
     const filepath = path.resolve(dirpath, file)
     const stat = await fs.lstat(filepath)
     if (stat.isDirectory()) {
-      await downDirLrcfiles(filepath)
+      await downDirLrcfiles(filepath, overwriteLrc)
     } else {
       if (isMusicFormat(file)) {
         if (await lrcExists(filepath)) {
+          if (overwriteLrc) {
+            musicfiles.push(filepath)
+          }
         } else {
           musicfiles.push(filepath)
         }
@@ -100,9 +103,9 @@ async function downDirLrcfiles (dirpath) {
   }
 }
 
-async function downDirLrc (dirpath) {
+async function downDirLrc (dirpath, overwriteLrc) {
   let errorfiles = []
-  await downDirLrcfiles(dirpath)
+  await downDirLrcfiles(dirpath, overwriteLrc)
   const size = musicfiles.length
   for (let index in musicfiles) {
     const file = musicfiles[index]
@@ -117,4 +120,4 @@ async function downDirLrc (dirpath) {
   console.log(errorfiles)
 }
 
-downDirLrc(process.argv[2] || 'E:\\Music')
+downDirLrc(process.argv[2] || 'E:\\Music', false)
