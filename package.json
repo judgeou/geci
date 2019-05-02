@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "dev": "backpack",
+    "build": "backpack build"
+  },
+  "devDependencies": {
+    "backpack-core": "^0.8.3"
+  },
+  "dependencies": {
+    "axios": "^0.18.0",
+    "fs-extra": "^7.0.1",
+    "music-metadata": "^3.7.0"
+  }
+}
