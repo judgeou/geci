@@ -92,4 +92,4 @@ async function downDirLrc (dirpath) {
   console.log(errorfiles)
 }
 
-downDirLrc('H:\\MUSIC')
+downDirLrc(process.argv[2] || 'E:\\Music')
