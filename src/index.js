@@ -4,9 +4,13 @@ const axios = require('axios')
 const fs = require('fs-extra')
 
 async function searchSong (title, artist) {
+  let kw = title
+  if (artist) {
+    kw = title + ' ' + artist
+  }
   const { data } = await axios.default({
     baseURL: 'https://songsearch.kugou.com/',
-    url: `/song_search_v2?keyword=${ encodeURI(title + ' ' + artist) }`,
+    url: `/song_search_v2?platform=WebFilter&keyword=${ encodeURI(kw) }`,
   })
   if (data.status) {
     const { lists } = data.data
@@ -17,6 +21,15 @@ async function searchSong (title, artist) {
     }
   } else {
     throw Error('没找到歌曲')
+  }
+}
+
+async function searchSong2 (title, artist) {
+  try {
+    const r = await searchSong(title, artist)
+    return r
+  } catch (err) {
+    return searchSong(title)
   }
 }
 
@@ -32,13 +45,24 @@ async function getLrcContent (hash) {
   }
 }
 
+function takeVaildHash (hashArr) {
+  for (let hash of hashArr) {
+    if (hash && hash.search(/^00000000/) === 0) {
+      continue
+    } else {
+      return hash
+    }
+  }
+}
+
 async function downlrc (file) {
   const mdata = await mm.parseFile(file)
   const { title, artist, album } = mdata.common
-  const songs = await searchSong(title, artist)
+  const songs = await searchSong2(title, artist)
   for (let song of songs) {
-    const { SongName, SingerName, AlbumID, SQFileHash, HQFileHash } = song
-    const lrcContent = await getLrcContent(HQFileHash)
+    const { SongName, SingerName, AlbumID, SQFileHash, HQFileHash, FileHash } = song
+    const hash = takeVaildHash([FileHash, HQFileHash, SQFileHash])
+    const lrcContent = await getLrcContent(hash)
 
     const lrcFilePath = path.resolve(path.dirname(file), path.basename(file, path.extname(file)) + '.lrc')
     await fs.writeFile(lrcFilePath, lrcContent)
@@ -86,7 +110,8 @@ async function downDirLrc (dirpath) {
     try {
       await downlrc(file)
     } catch (err) {
-      errorfiles.push(file)
+      const { title, artist } = (await mm.parseFile(file)).common
+      errorfiles.push({ title, artist })
     }
   }
   console.log(errorfiles)
